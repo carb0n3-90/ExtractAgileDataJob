@@ -271,7 +271,6 @@ public IAgileSession getAgileSession() throws APIException
 			Iterator<String> itemItr = itemSet.iterator();
 			while (itemItr.hasNext()) {
 				String itemNo = itemItr.next();
-				logger.info("Getting BOM items for Item: "+itemNo);
 				IItem parentItem = (IItem)session.getObject(IItem.OBJECT_TYPE, itemNo);
 				getBOMItem(parentItem);
 			}
@@ -593,154 +592,6 @@ public IAgileSession getAgileSession() throws APIException
 		}
 	}
 	
-	public void createDTLSFile(IItem itemObj) throws APIException, IOException{
-		String path = prop.getProperty("BASE_PATH_FOR_OUTPUT_FILES")+timeStamp+"/";
-		logger.info("Start creating data files for Items.");
-		new File(path).mkdirs();
-		String dtlsFileName = path+"/ITEMS_"+itemObj.getAgileClass().getName().replace(" ", "")+"_DTLS.txt"; //indexFileName.replace("Index", "Data").replace(".idx", ".txt").replace("ITEMS_", "ITEMS_DTLS_");
-		genDTLSFile(itemObj,dtlsFileName);
-		
-		String revFileName = path+"/ITEMS_REV.txt";
-		String pendRevFileName = path+"/ITEMS_PENDING_REV.txt";
-		String bomFileName = path+"/ITEMS_BOM.txt";
-		String amlFileName = path+"/ITEMS_AML.txt";
-		
-		createFileForTab("AML",itemObj,amlFileName);
-		createFileForTab("REV",itemObj,revFileName);
-		createFileForTab("BOM",itemObj,bomFileName);
-		createFileForTab("PEND_REV",itemObj,pendRevFileName);
-	}
-	
-	
-	public void populateItemsDTLSOnTheFly() throws APIException, IOException{
-
-		String path = prop.getProperty("BASE_PATH_FOR_OUTPUT_FILES")+timeStamp+"/";
-		logger.info("Start creating data files for Items.");
-		new File(path).mkdirs();
-		String idxFilePath = prop.getProperty("BASE_PATH_FOR_INDEX_FILES")+timeStamp+"/";
-		List<File> files = getFilesfromDir(idxFilePath, ".idx", "ITEMS_");
-		String itemNum = "";
-		IItem itemObj = null;
-		String indexFileName = "";
-		String latestRev = "";
-		String dtlsFileName = "";
-		String amlHeader = "";
-		String bomHeader = "";
-		String revHeader = "";
-		String pendRevHeader = "";
-		String revFileName = path+"/ITEMS_REV.txt";
-		String pendRevFileName = path+"/ITEMS_PENDING_REV.txt";
-		String bomFileName = path+"/ITEMS_BOM.txt";
-		String amlFileName = path+"/ITEMS_AML.txt";
-		
-		
-		for (File idxFile : files) {
-			indexFileName = idxFile.getAbsolutePath();
-			dtlsFileName = indexFileName.replace("Index", "Data").replace(".idx", ".txt").replace("ITEMS_", "ITEMS_DTLS_");
-			BufferedReader br = null;
-			try {
-				br = new BufferedReader(new FileReader(indexFileName));
-				String line = br.readLine();
-				
-				if (line != null && !line.isEmpty()) {
-					itemObj = (IItem)session.getObject(IItem.OBJECT_TYPE, line);
-					if(itemObj!=null)
-						genDTLSFile(itemObj,dtlsFileName);
-				}
-				while (line != null && !line.isEmpty()) {
-					itemNum = line;// .next();
-					itemObj = (IItem) session.getObject(IItem.OBJECT_TYPE, itemNum);
-					if (itemObj != null) {
-						if(amlHeader.isEmpty())
-							amlHeader = createFileForTab("AML",itemObj,amlFileName);
-						if(revHeader.isEmpty())
-							revHeader = createFileForTab("REV",itemObj,revFileName);
-						if(bomHeader.isEmpty())
-							bomHeader = createFileForTab("BOM",itemObj,bomFileName);
-						if(pendRevHeader.isEmpty())
-							pendRevHeader = createFileForTab("PEND_REV",itemObj,pendRevFileName);
-											
-						
-						try{
-							latestRev = itemObj.getRevision();
-							extractDtlsTab(itemObj, dtlsFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						try{
-							itemObj.setRevision(latestRev);
-							extractChangesTab(itemObj, revFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						try{
-							itemObj.setRevision(latestRev);
-							extractPendingChangesTab(itemObj, pendRevFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						try{
-							itemObj.setRevision(latestRev);
-							extractBOMTab(itemObj, bomFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						try{
-							itemObj.setRevision(latestRev);
-							extractAMLTab(itemObj, amlFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						try{
-							itemObj.setRevision(latestRev);
-							//extractAttachmentTab(itemObj, indexFileName.replace(".idx", "/attachment"));
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-					}
-					line = br.readLine();
-				}
-			} catch (FileNotFoundException e) {
-				logger.info("Exception during item:"+itemObj);
-				logger.error(e.getMessage(),e);
-			} catch (IOException e) {
-				logger.info("Exception during item:"+itemObj);
-				logger.error(e.getMessage(),e);
-			} finally {
-				try {
-					br.close();
-				} catch (IOException e) {
-					logger.error(e.getMessage(),e);
-				}
-			}
-		}
-	
-	}
-
 	public void populateItemDetails() throws APIException, IOException {
 		String path = prop.getProperty("BASE_PATH_FOR_OUTPUT_FILES")+timeStamp+"/";
 		logger.info("Start creating data files for Items.");
@@ -771,12 +622,10 @@ public IAgileSession getAgileSession() throws APIException
 			try {
 				br = new BufferedReader(new FileReader(indexFileName));
 				String line = br.readLine();
-				if(exportScope.contains("ITEMS")){
 				if (line != null && !line.isEmpty()) {
 					itemObj = (IItem)session.getObject(IItem.OBJECT_TYPE, line);
 					if(itemObj!=null)
 						genDTLSFile(itemObj,dtlsFileName);
-				}
 				}
 				while (line != null && !line.isEmpty()) {
 					itemNum = line;// .next();
@@ -784,28 +633,19 @@ public IAgileSession getAgileSession() throws APIException
 					itemObj = (IItem) session.getObject(IItem.OBJECT_TYPE, itemNum);
 					latestRev = itemObj.getRevision();
 					if (itemObj != null) {
-						if(exportScope.contains("AML")){
+
 						if(amlHeader.isEmpty())
 							amlHeader = createFileForTab("AML",itemObj,amlFileName);
-						}
-						if(exportScope.contains("REV")){
 						if(revHeader.isEmpty())
 							revHeader = createFileForTab("REV",itemObj,revFileName);
-						}
-						if(exportScope.contains("BOM")){
 						if("Parts".equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName()) 
 								&& bomPartHeader.isEmpty())
 							bomPartHeader = createFileForTab("BOM",itemObj,bomPartsFileName);
 						if("Documents".equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName()) 
 								&& bomDocumentHeader.isEmpty())
 							bomDocumentHeader = createFileForTab("BOM",itemObj,bomDocsFileName);
-						}
-						if(exportScope.contains("PENDING_REV")){
 						if(pendRevHeader.isEmpty())
 							pendRevHeader = createFileForTab("PEND_REV",itemObj,pendRevFileName);
-						}
-											
-						if(exportScope.contains("ITEMS")){
 						try{
 							latestRev = itemObj.getRevision();
 							extractDtlsTab(itemObj, dtlsFileName);
@@ -816,8 +656,6 @@ public IAgileSession getAgileSession() throws APIException
 						catch(Exception e){
 							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
 						}
-						}
-						if(exportScope.contains("REV")){
 						try{
 							itemObj.setRevision(latestRev);
 							extractChangesTab(itemObj, revFileName);
@@ -828,8 +666,6 @@ public IAgileSession getAgileSession() throws APIException
 						catch(Exception e){
 							logger.error("Exception while retreiving Item Rev for Item:"+itemObj,e);
 						}
-						}
-						if(exportScope.contains("PENDING_REV")){
 						try{
 							itemObj.setRevision(latestRev);
 							extractPendingChangesTab(itemObj, pendRevFileName);
@@ -840,9 +676,6 @@ public IAgileSession getAgileSession() throws APIException
 						catch(Exception e){
 							logger.error("Exception while retreiving Item Pending Rev for Item:"+itemObj,e);
 						}
-						}
-						if(exportScope.contains("BOM")){
-							
 						try{
 							itemObj.setRevision(latestRev);
 							if("Parts".equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName())){
@@ -858,8 +691,6 @@ public IAgileSession getAgileSession() throws APIException
 						catch(Exception e){
 							logger.error("Exception while retreiving Item BOM Details for Item:"+itemObj,e);
 						}
-						}
-						if(exportScope.contains("AML")){
 						try{
 							itemObj.setRevision(latestRev);
 							extractAMLTab(itemObj, amlFileName);
@@ -870,17 +701,6 @@ public IAgileSession getAgileSession() throws APIException
 						catch(Exception e){
 							logger.error("Exception while retreiving Item AML Details for Item:"+itemObj,e);
 						}
-						}
-						/*try{
-							itemObj.setRevision(latestRev);
-							//extractAttachmentTab(itemObj, indexFileName.replace(".idx", "/attachment"));
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving all Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving all Item Details for Item:"+itemObj,e);
-						}*/
 					}
 					}
 					catch(APIException e){
@@ -907,7 +727,7 @@ public IAgileSession getAgileSession() throws APIException
 		}
 	}
 	
-	
+
 	public void populateChangeDetails() throws APIException, IOException {
 		String path = prop.getProperty("BASE_PATH_FOR_OUTPUT_FILES")+timeStamp+"/";
 		logger.info("Start creating data files for Changes.");
