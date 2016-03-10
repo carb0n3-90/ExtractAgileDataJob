@@ -80,6 +80,12 @@ public class ExtractItemData {
 		DateFormat df = new SimpleDateFormat("yyyyMMddHHmm");
 		timeStamp = df.format(calobj.getTime());
 		getHistoricalBom = prop.getProperty("EXTRACT_BOM_HISTORY");
+		
+		
+		//IServiceRequest psr = null;
+		//psr.getTable(ServiceRequestConstants.Tab)
+		//IQualityChangeRequest qcr = null;
+		//qcr.getTable(QualityChangeRequestConstants.T)
 
 	}
 
@@ -752,16 +758,22 @@ public IAgileSession getAgileSession() throws APIException
 		String indexFileName = "";
 		String latestRev = "";
 		String dtlsFileName = "";
-		String amlHeader = "";
+		String amlPartHeader = "";
+		String amlDocHeader = "";
 		String bomPartHeader = "";
 		String bomDocumentHeader = "";
-		String revHeader = "";
-		String pendRevHeader = "";
-		String revFileName = path+"/ITEMS_REV.txt";
-		String pendRevFileName = path+"/ITEMS_PENDING_REV.txt";
+		String revPartHeader = "";
+		String pendRevPartHeader = "";
+		String revDocHeader = "";
+		String pendRevDocHeader = "";
+		String revPartsFileName = path+"/PARTS_REV.txt";
+		String revDocsFileName = path+"/DOCUMENTS_REV.txt";
+		String pendRevPartsFileName = path+"/PARTS_PENDING_REV.txt";
+		String pendRevDocsFileName = path+"/DOCUMENTS_PENDING_REV.txt";
 		String bomPartsFileName = path+"/PARTS_BOM.txt";
 		String bomDocsFileName = path+"/DOCUMENTS_BOM.txt";
-		String amlFileName = path+"/ITEMS_AML.txt";
+		String amlPartsFileName = path+"/PARTS_AML.txt";
+		String amlDocsFileName = path+"/DOCUMENTS_AML.txt";
 		String exportScope = prop.getProperty("ITEMS_DATA_EXPORT_SCOPE");
 		
 		for (File idxFile : files) {
@@ -783,105 +795,149 @@ public IAgileSession getAgileSession() throws APIException
 					try{
 					itemObj = (IItem) session.getObject(IItem.OBJECT_TYPE, itemNum);
 					latestRev = itemObj.getRevision();
-					if (itemObj != null) {
-						if(exportScope.contains("AML")){
-						if(amlHeader.isEmpty())
-							amlHeader = createFileForTab("AML",itemObj,amlFileName);
-						}
-						if(exportScope.contains("REV")){
-						if(revHeader.isEmpty())
-							revHeader = createFileForTab("REV",itemObj,revFileName);
-						}
-						if(exportScope.contains("BOM")){
-						if("Parts".equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName()) 
-								&& bomPartHeader.isEmpty())
-							bomPartHeader = createFileForTab("BOM",itemObj,bomPartsFileName);
-						if("Documents".equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName()) 
-								&& bomDocumentHeader.isEmpty())
-							bomDocumentHeader = createFileForTab("BOM",itemObj,bomDocsFileName);
-						}
-						if(exportScope.contains("PENDING_REV")){
-						if(pendRevHeader.isEmpty())
-							pendRevHeader = createFileForTab("PEND_REV",itemObj,pendRevFileName);
-						}
-											
-						if(exportScope.contains("ITEMS")){
-						try{
-							latestRev = itemObj.getRevision();
-							extractDtlsTab(itemObj, dtlsFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Details for Item:"+itemObj,e);
-						}
-						}
-						if(exportScope.contains("REV")){
-						try{
-							itemObj.setRevision(latestRev);
-							extractChangesTab(itemObj, revFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Rev for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Rev for Item:"+itemObj,e);
-						}
-						}
-						if(exportScope.contains("PENDING_REV")){
-						try{
-							itemObj.setRevision(latestRev);
-							extractPendingChangesTab(itemObj, pendRevFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item Pending Rev for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item Pending Rev for Item:"+itemObj,e);
-						}
-						}
-						if(exportScope.contains("BOM")){
-							
-						try{
-							itemObj.setRevision(latestRev);
-							if("Parts".equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName())){
-							extractBOMTab(itemObj, bomPartsFileName);
-							}
-							if("Documents".equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName())){
-								extractBOMTab(itemObj, bomDocsFileName);
+						if (itemObj != null) {
+							if ("Parts".equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName())) {
+								if (exportScope.contains("AML")) {
+									if (amlPartHeader.isEmpty())
+										amlPartHeader = createFileForTab("AML", itemObj, amlPartsFileName);
 								}
+								if (exportScope.contains("REV")) {
+									if (revPartHeader.isEmpty())
+										revPartHeader = createFileForTab("REV", itemObj, revPartsFileName);
+								}
+								if (exportScope.contains("BOM")) {
+									if (bomPartHeader.isEmpty())
+										bomPartHeader = createFileForTab("BOM", itemObj, bomPartsFileName);
+								}
+								if (exportScope.contains("PENDING_REV")) {
+									if (pendRevPartHeader.isEmpty())
+										pendRevPartHeader = createFileForTab("PEND_REV", itemObj, pendRevPartsFileName);
+								}
+							} else if ("Documents"
+									.equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName())) {
+								if (exportScope.contains("AML")) {
+									if (amlDocHeader.isEmpty())
+										amlDocHeader = createFileForTab("AML", itemObj, amlDocsFileName);
+								}
+								if (exportScope.contains("REV")) {
+									if (revDocHeader.isEmpty())
+										revDocHeader = createFileForTab("REV", itemObj, revDocsFileName);
+								}
+								if (exportScope.contains("BOM")) {
+									if (bomDocumentHeader.isEmpty())
+										bomDocumentHeader = createFileForTab("BOM", itemObj, bomDocsFileName);
+								}
+								if (exportScope.contains("PENDING_REV")) {
+									if (pendRevDocHeader.isEmpty())
+										pendRevDocHeader = createFileForTab("PEND_REV", itemObj, pendRevDocsFileName);
+								}
+							}
+
+							if (exportScope.contains("ITEMS")) {
+								try {
+									latestRev = itemObj.getRevision();
+									extractDtlsTab(itemObj, dtlsFileName);
+								} catch (APIException e) {
+									logger.error("Exception while retreiving Item Details for Item:" + itemObj, e);
+								} catch (Exception e) {
+									logger.error("Exception while retreiving Item Details for Item:" + itemObj, e);
+								}
+							}
+							if ("Parts"
+									.equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName())) {
+							if (exportScope.contains("REV")) {
+								try {
+									itemObj.setRevision(latestRev);
+									extractChangesTab(itemObj, revPartsFileName);
+								} catch (APIException e) {
+									logger.error("Exception while retreiving Item Rev for Item:" + itemObj, e);
+								} catch (Exception e) {
+									logger.error("Exception while retreiving Item Rev for Item:" + itemObj, e);
+								}
+							}
+							if (exportScope.contains("PENDING_REV")) {
+								try {
+									itemObj.setRevision(latestRev);
+									extractPendingChangesTab(itemObj, pendRevPartsFileName);
+								} catch (APIException e) {
+									logger.error("Exception while retreiving Item Pending Rev for Item:" + itemObj, e);
+								} catch (Exception e) {
+									logger.error("Exception while retreiving Item Pending Rev for Item:" + itemObj, e);
+								}
+							}
+							if (exportScope.contains("BOM")) {
+
+								try {
+									itemObj.setRevision(latestRev);
+									extractBOMTab(itemObj, bomPartsFileName);
+								} catch (APIException e) {
+									logger.error("Exception while retreiving Item BOM Details for Item:" + itemObj, e);
+								} catch (Exception e) {
+									logger.error("Exception while retreiving Item BOM Details for Item:" + itemObj, e);
+								}
+							}
+							if (exportScope.contains("AML")) {
+								try {
+									itemObj.setRevision(latestRev);
+									extractAMLTab(itemObj, amlPartsFileName);
+								} catch (APIException e) {
+									logger.error("Exception while retreiving Item AML Details for Item:" + itemObj, e);
+								} catch (Exception e) {
+									logger.error("Exception while retreiving Item AML Details for Item:" + itemObj, e);
+								}
+							}
+							}
+							else if ("Documents"
+									.equalsIgnoreCase(itemObj.getAgileClass().getSuperClass().getName())) {
+								if (exportScope.contains("REV")) {
+									try {
+										itemObj.setRevision(latestRev);
+										extractChangesTab(itemObj, revDocsFileName);
+									} catch (APIException e) {
+										logger.error("Exception while retreiving Item Rev for Item:" + itemObj, e);
+									} catch (Exception e) {
+										logger.error("Exception while retreiving Item Rev for Item:" + itemObj, e);
+									}
+								}
+								if (exportScope.contains("PENDING_REV")) {
+									try {
+										itemObj.setRevision(latestRev);
+										extractPendingChangesTab(itemObj, pendRevDocsFileName);
+									} catch (APIException e) {
+										logger.error("Exception while retreiving Item Pending Rev for Item:" + itemObj,
+												e);
+									} catch (Exception e) {
+										logger.error("Exception while retreiving Item Pending Rev for Item:" + itemObj,
+												e);
+									}
+								}
+								if (exportScope.contains("BOM")) {
+
+									try {
+										itemObj.setRevision(latestRev);
+										extractBOMTab(itemObj, bomDocsFileName);
+									} catch (APIException e) {
+										logger.error("Exception while retreiving Item BOM Details for Item:" + itemObj,
+												e);
+									} catch (Exception e) {
+										logger.error("Exception while retreiving Item BOM Details for Item:" + itemObj,
+												e);
+									}
+								}
+								if (exportScope.contains("AML")) {
+									try {
+										itemObj.setRevision(latestRev);
+										extractAMLTab(itemObj, amlDocsFileName);
+									} catch (APIException e) {
+										logger.error("Exception while retreiving Item AML Details for Item:" + itemObj,
+												e);
+									} catch (Exception e) {
+										logger.error("Exception while retreiving Item AML Details for Item:" + itemObj,
+												e);
+									}
+								}
+							}
 						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item BOM Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item BOM Details for Item:"+itemObj,e);
-						}
-						}
-						if(exportScope.contains("AML")){
-						try{
-							itemObj.setRevision(latestRev);
-							extractAMLTab(itemObj, amlFileName);
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving Item AML Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving Item AML Details for Item:"+itemObj,e);
-						}
-						}
-						/*try{
-							itemObj.setRevision(latestRev);
-							//extractAttachmentTab(itemObj, indexFileName.replace(".idx", "/attachment"));
-						}
-						catch(APIException e){
-							logger.error("Exception while retreiving all Item Details for Item:"+itemObj,e);
-						}
-						catch(Exception e){
-							logger.error("Exception while retreiving all Item Details for Item:"+itemObj,e);
-						}*/
-					}
 					}
 					catch(APIException e){
 						logger.error("Exception while retreiving Item Details for Item:"+line,e);
@@ -919,7 +975,7 @@ public IAgileSession getAgileSession() throws APIException
 		String indexFileName = "";
 		String dtlsFileName = "";
 		String line = "";
-		
+	
 		for (File idxFile : files) {
 			indexFileName = idxFile.getAbsolutePath();
 			dtlsFileName = indexFileName.replace("Index", "Data").replace(".idx", ".txt");
@@ -927,24 +983,40 @@ public IAgileSession getAgileSession() throws APIException
 			try {
 				br = new BufferedReader(new FileReader(indexFileName));
 				line = br.readLine();
-				
-				if (line != null && !line.isEmpty()) {
-					chgObj = (IChange)session.getObject(IChange.OBJECT_TYPE, line);
-					if(chgObj!=null)
-						genDTLSFile(chgObj,dtlsFileName);
+				if (prop.getProperty("CHANGES_TABLES_INSCOPE").contains("CHANGES")) {
+					if (line != null && !line.isEmpty()) {
+						chgObj = (IChange) session.getObject(IChange.OBJECT_TYPE, line);
+						if (chgObj != null) {
+							genDTLSFile(chgObj, dtlsFileName);
+						}
+					}
 				}
 				while (line != null && !line.isEmpty()) {
 					try {
 						chgNum = line;// .next();
 						chgObj = (IChange) session.getObject(IChange.OBJECT_TYPE, chgNum);
 						if (chgObj != null) {
-							extractDtlsTab(chgObj, dtlsFileName);
+							if (prop.getProperty("CHANGES_TABLES_INSCOPE").contains("CHANGES")) {
+								extractDtlsTab(chgObj, dtlsFileName);
+							}
+							ITable[] allTables = chgObj.getTables();
+							String tabData = "";
+							for (ITable tab : allTables) {
+								String tabName = tab.getName().toUpperCase().replace(" ", "");
+								if (prop.getProperty("CHANGES_TABLES_INSCOPE").contains(tab.getName())) {
+									tabData = extractTableDTLS(chgObj, tab);
+									if (!tabData.isEmpty()) {
+										createPopulateFile(dtlsFileName.replace(".txt", "_" + tabName+".txt") , tabData, chgObj, tab);
+									}
+								}
+							}
 						}
 					} catch (APIException e) {
 						logger.error("Exception while retreiving Change Details for Change:" + line, e);
 					} catch (Exception e) {
 						logger.error("Exception while retreiving Change Details for Change:" + line, e);
 					}
+
 					line = br.readLine();
 				}
 			} catch (FileNotFoundException e) {
@@ -1141,6 +1213,7 @@ public IAgileSession getAgileSession() throws APIException
 					writeInFile(fileName, attrValList.toString());
 			}
 		} else {
+			dataObj  = (IItem)session.getObject(IItem.OBJECT_TYPE, dataObj.getName());
 			String attrValList = extractTableDTLS(dataObj, dataObj.getTable(ItemConstants.TABLE_MANUFACTURERS));
 			if (!attrValList.isEmpty())
 				writeInFile(fileName, attrValList.toString());
@@ -1150,7 +1223,7 @@ public IAgileSession getAgileSession() throws APIException
 		
 	}
 
-	private String extractTableDTLS(IItem dataObj, ITable itemTable) throws APIException, IOException {
+	private String extractTableDTLS(IDataObject dataObj, ITable itemTable) throws APIException, IOException {
 		StringBuilder attrValList = new StringBuilder();
 		String attrVal = "";
 		Object valObj = null;
@@ -1159,8 +1232,11 @@ public IAgileSession getAgileSession() throws APIException
 		while (itemTabItr.hasNext()) {
 			amlRow = (IRow) itemTabItr.next();
 			attrValList.append(dataObj.getName()).append(DELIMITER);
+			if(dataObj instanceof IItem){
 			if(itemTable.getId() == ItemConstants.TABLE_BOM || itemTable.getId() == ItemConstants.TABLE_MANUFACTURERS)
-				attrValList.append(dataObj.getRevision()).append(DELIMITER);
+				attrValList.append(
+						((IItem)dataObj).getRevision()).append(DELIMITER);
+			}
 			ICell[] amlCells = amlRow.getCells();
 			for (ICell amlCell : amlCells) {
 				valObj = amlCell.getValue();
@@ -1515,8 +1591,44 @@ public IAgileSession getAgileSession() throws APIException
 		}
 	}
 
+	private void createPopulateFile(String fileName, String tabData, IDataObject aglObj, ITable tabName) {
+		File f = null;
+		try {
+			f = new File(fileName);
+			if (!f.exists()) {
+				String tabHeader = getTableHeaders(aglObj, tabName);
+				writeInFile(fileName, tabHeader);
+			}
+			writeInFile(fileName, tabData);
+		} catch (APIException e) {
+			logger.error(e.getMessage(), e);
+		} catch (IOException e) {
+			logger.error(e.getMessage(), e);
+		}
 
+	}
 
+	public static String getTableHeaders(IDataObject dataObj, ITable tabObj) throws APIException {
+		StringBuilder attrNameList = new StringBuilder();
+		ICell[] attrCellArry = null;
+		if (tabObj == null) {
+			attrCellArry = dataObj.getCells();
+		} else {
+			ITwoWayIterator tabItr = tabObj.getTableIterator();
+			if (tabItr.hasNext()) {
+				IRow row = (IRow) tabItr.next();
+				attrCellArry = row.getCells();
+			}
+		}
+		if (attrCellArry != null) {
+			attrNameList.append("Number").append(DELIMITER);
+			for (ICell cell : attrCellArry) {
+				attrNameList.append(cell.getName()).append(DELIMITER);
+			}
+		}
+		return attrNameList.toString();
+	}
+	
 	public void populateAttachments() throws APIException, IOException {
 		populateItemsAttachments();
 		populateChangesAttachments();
