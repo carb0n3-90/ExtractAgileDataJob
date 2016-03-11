@@ -44,9 +44,13 @@ public class ExtractDataAction {
 				ExtractItemData.timeStamp  =idxDirecrory;
 			}else {
 				logger.info("Creating IDX files");
-				srcObj.getAgileSearchResults();
-				//srcObj.getAllBOMItems();
-				srcObj.extractBOMItem();
+				if(extractTANsOnly()){
+					srcObj.getAglSearchResultsTANs();
+				}else{
+					srcObj.getAgileSearchResults();
+					//srcObj.getAllBOMItems();
+					srcObj.extractBOMItem();
+				}
 				srcObj.getAllMPNMFR();
 				srcObj.getAllChanges();
 				srcObj.createIndexFiles();
@@ -89,6 +93,10 @@ public class ExtractDataAction {
 		logger.info("Extract Completed @ -- " + df.format(Calendar.getInstance().getTime()));
 	}
 	
+	private static boolean extractTANsOnly() {
+		return "Y".equalsIgnoreCase(ExtractItemData.prop.getProperty("EXTRACT_DATA_FOR_TOP_LEVEL_PARTS_ONLY"));
+	}
+
 	public static boolean isIDXfilesExists(String idxDir){
 			File f = new File(ExtractItemData.prop.getProperty("BASE_PATH_FOR_INDEX_FILES")+idxDir);
 			return (f.exists() && f.isDirectory());

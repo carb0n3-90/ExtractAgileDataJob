@@ -1636,4 +1636,123 @@ public IAgileSession getAgileSession() throws APIException
 		populateMPNAttachments();
 		
 	}
+
+
+
+	public void getAglSearchResultsTANs() throws APIException {
+		Set<String> itemSet = null;
+		IFolder folder = (IFolder) session.getObject(IFolder.OBJECT_TYPE, "/" + prop.getProperty("AGL_SEARCH_FOLDER"));
+		IQuery query = (IQuery) folder.getChild(prop.getProperty("AGL_SEARCH_NAME"));
+		ITable results = query.execute();
+		logger.info("Search result count:"+results.size());
+		ITwoWayIterator itr = results.getTableIterator();
+		String itemType = "";
+		while (itr.hasNext()) {
+			IRow row = (IRow) itr.next();
+			itemType = row.getValue(ItemConstants.ATT_TITLE_BLOCK_ITEM_TYPE).toString();
+			if (itemMap.containsKey(itemType)) {
+				itemSet = itemMap.get(itemType);
+			} else {
+				itemSet = new HashSet<String>();
+			}
+			itemSet.add(row.getValue(ItemConstants.ATT_TITLE_BLOCK_NUMBER).toString());
+			itemMap.put(itemType, itemSet);
+		}
+		logger.info(prop.getProperty("AGL_SEARCH_NAME")+ "executed successfully.");
+		filterSearchResForTans();
+	}
+
+
+
+	private void filterSearchResForTans() {
+		logger.info("Start filtering search resukts for TANs & Orphans");
+		Map<String, Set<String>> resultItemMap = new HashMap<String, Set<String>>();
+		Set<String> resultItemSet = null;//new HashSet<String>();
+		//resultItemMap.putAll(itemMap);
+				
+		//Map<String, Set<String>> tmp = new HashMap<String, Set<String>>(itemMap);
+		//tmp.keySet().removeAll(resultItemMap.keySet());
+		//resultItemMap.putAll(tmp);
+		Set<String> itemSet = null;
+		Connection connectionObj = null;
+		try {
+			connectionObj = getDBConnection();
+		} catch (ClassNotFoundException e) {
+			logger.error(e.getMessage(),e);
+		} catch (SQLException e) {
+			logger.error(e.getMessage(),e);
+		}
+		if (connectionObj != null) {
+			String queryForTANs = prop.getProperty("DB_TAN_QUERY");
+			if("Y".equalsIgnoreCase(prop.getProperty("CHECK_WU_FOR_PREVIOUS_REV"))){
+				queryForTANs = queryForTANs.toUpperCase()
+						.replace(prop.getProperty("DB_CRITERIA_FOR_LATEST_REV_WU").toUpperCase(), "");
+						
+			}
+			logger.info(queryForTANs);
+			PreparedStatement ps = null;
+			ResultSet rs = null;
+			try {
+				String itemType = "";
+				String itemNumber = "";
+				int wuCnt = 0;
+				Iterator<String> itemClassItr = itemMap.keySet().iterator();
+				while (itemClassItr.hasNext()) {
+					itemType = itemClassItr.next();
+					itemSet = itemMap.get(itemType);
+					Iterator<String> itemItr = itemSet.iterator();
+					while (itemItr.hasNext()) {
+						itemNumber = itemItr.next();
+						ps = connectionObj.prepareStatement(queryForTANs);
+						ps.setString(1, itemNumber);
+						rs = ps.executeQuery();
+						
+						if (rs.next()) {
+							wuCnt = rs.getInt(1);
+							logger.info(itemNumber+" WU C0unt : "+wuCnt);
+							if(wuCnt>0){
+								if (resultItemMap.containsKey(itemType)) {
+									resultItemSet = resultItemMap.get(itemType);
+								} else {
+									resultItemSet = new HashSet<String>();
+								}
+								resultItemSet.add(itemNumber);
+								resultItemMap.put(itemType, resultItemSet);
+							}
+						}
+						rs.close();
+						ps.close();
+					}
+				}
+				connectionObj.close();
+			} catch (SQLException e) {
+				logger.error(e.getMessage(),e);
+			} finally {
+				if (rs != null)
+					try {
+						rs.close();
+					} catch (SQLException e) {
+						logger.error(e.getMessage(),e);
+					}
+				if (ps != null)
+					try {
+						ps.close();
+					} catch (SQLException e) {
+						logger.error(e.getMessage(),e);
+					}
+				if (connectionObj != null)
+					try {
+						connectionObj.close();
+					} catch (SQLException e) {
+						logger.error(e.getMessage(),e);
+					}
+			}
+		}
+		itemMap = resultItemMap;
+		logger.info("Search Result filter complete!!!");
+	
+	}
+
+
+
 }
